@@ -1,33 +1,28 @@
-package io.github.callmephil.parsecs.graphics
+package kraylib.ui.graphics
 
-import com.badlogic.gdx.graphics.Color
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer
+import kraylib.raylib.shapes.drawRectangle
+import kraylib.raylib.structs.Color
 
-fun ShapeRenderer.border(
-    x: Float, y: Float,
-    width: Float, height: Float,
-    borderThickness: Float, color: Color
+fun border(
+    x: Int, y: Int,
+    width: Int, height: Int,
+    borderThickness: Int, color: Color
 ) {
-    this.color = color
     // Bottom
-//        line(x, y + borderOffset, x + width, y)
-    rect(x, y, width, borderThickness)
+    drawRectangle(x, y, width, borderThickness, color)
 
     // Top
-//        line(x, y + height, x + width, y + height)
-    rect(x, y + height - borderThickness, width, borderThickness)
+    drawRectangle(x, y + height - borderThickness, width, borderThickness, color)
 
     // Left
-//        line(x, y - borderOffset, x, y + height + borderOffset)
-    rect(x, y, borderThickness, height)
+    drawRectangle(x, y, borderThickness, height, color)
 
     // Right
-//        line(x + width, y - borderOffset, x + width, y + height + borderOffset)
-    rect(x + width - borderThickness, y, borderThickness, height)
+    drawRectangle(x + width - borderThickness, y, borderThickness, height, color)
 }
 
-fun ShapeRenderer.using(type: ShapeRenderer.ShapeType, block: ShapeRenderer.() -> Unit) {
-    this.begin(type)
-    block()
-    this.end()
-}
+//fun ShapeRenderer.using(type: ShapeRenderer.ShapeType, block: ShapeRenderer.() -> Unit) {
+//    this.begin(type)
+//    block()
+//    this.end()
+//}

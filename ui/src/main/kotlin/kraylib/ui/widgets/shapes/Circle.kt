@@ -4,7 +4,7 @@ import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType
 import kraylib.ui.RenderContext
 import io.github.callmephil.parsecs.graphics.gl.Opengl
-import io.github.callmephil.parsecs.graphics.using
+import kraylib.ui.graphics.using
 import io.github.callmephil.parsecs.ui.*
 import kraylib.ui.widgets.Constraint
 import kraylib.ui.widgets.Container

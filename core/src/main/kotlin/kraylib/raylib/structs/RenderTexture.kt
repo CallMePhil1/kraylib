@@ -2,30 +2,34 @@ package kraylib.raylib.structs
 
 import kraylib.FFM
 import kraylib.ffm.RenderTexture
+import kraylib.raylib.NativeMemory
 import java.lang.foreign.MemorySegment
 
 class RenderTexture(
-    id: Int,
-    texture: Texture,
-    depth: Texture
-) {
-    internal var memorySegment: MemorySegment = RenderTexture.allocate(FFM.arena)
+    override var memorySegment: MemorySegment = RenderTexture.allocate(FFM.arena)
+) : NativeMemory<RenderTexture>(memorySegment) {
 
-    var id: Int = id
+    var id: Int
+        get() = RenderTexture.id(memorySegment)
+        set(value) = RenderTexture.id(memorySegment, value)
+
+    var texture: Texture = Texture(RenderTexture.texture(memorySegment))
         set(value) {
-            RenderTexture.id(memorySegment, value)
-            field = value
+            field.memorySegment.copyFrom(value.memorySegment)
         }
 
-    var texture: Texture = texture
+    var depth: Texture = Texture(RenderTexture.texture(memorySegment))
         set(value) {
-            RenderTexture.texture(memorySegment, value.memorySegment)
-            field = value
+            field.memorySegment.copyFrom(value.memorySegment)
         }
 
-    var depth: Texture = depth
-        set(value) {
-            RenderTexture.depth(memorySegment, value.memorySegment)
-            field = value
-        }
+    constructor(
+        id: Int,
+        texture: Texture,
+        depth: Texture
+    ) : this() {
+        this.id = id
+        this.texture = texture
+        this.depth = depth
+    }
 }

@@ -2,14 +2,14 @@ package kraylib.raylib.structs
 
 import kraylib.FFM
 import kraylib.ffm.Vector2 as Vector2FFM
-import kraylib.ffm.Vector3 as Vector3FFI
+import kraylib.ffm.Vector3 as Vector3FFM
 import kraylib.ffm.Vector4 as Vector4FFM
 import kraylib.raylib.NativeMemory
 import java.lang.foreign.MemorySegment
 
-class Vector2(override var memorySegment: MemorySegment) : NativeMemory<Vector2>() {
-
-    constructor() : this(Vector2FFM.allocate(FFM.arena))
+class Vector2(
+    override var memorySegment: MemorySegment = Vector2FFM.allocate(FFM.arena)
+) : NativeMemory<Vector2>(memorySegment) {
 
     constructor(x: Float, y: Float) : this() {
         this.x = x
@@ -27,48 +27,44 @@ class Vector2(override var memorySegment: MemorySegment) : NativeMemory<Vector2>
     companion object {
         fun empty() = Vector2(MemorySegment.NULL)
         fun zero() = Vector2()
-
-        val byteSize = Vector2FFM.sizeof()
     }
 }
 
 class Vector3(
-    x: Float,
-    y: Float,
-    z: Float
-) {
-    internal var memorySegment: MemorySegment = Vector3FFI.allocate(FFM.arena)
+    override var memorySegment: MemorySegment = Vector3FFM.allocate(FFM.arena)
+) : NativeMemory<Vector3>(memorySegment) {
 
     var x: Float
-        get() = Vector3FFI.x(memorySegment)
-        set(value) = Vector3FFI.x(memorySegment, value)
+        get() = Vector3FFM.x(memorySegment)
+        set(value) = Vector3FFM.x(memorySegment, value)
 
     var y: Float
-        get() = Vector3FFI.y(memorySegment)
-        set(value) = Vector3FFI.y(memorySegment, value)
+        get() = Vector3FFM.y(memorySegment)
+        set(value) = Vector3FFM.y(memorySegment, value)
 
     var z: Float
-        get() = Vector3FFI.z(memorySegment)
-        set(value) = Vector3FFI.z(memorySegment, value)
+        get() = Vector3FFM.z(memorySegment)
+        set(value) = Vector3FFM.z(memorySegment, value)
 
-    init {
+    constructor(
+        x: Float,
+        y: Float,
+        z: Float
+    ) : this() {
         this.x = x
         this.y = y
         this.z = z
     }
 
     companion object {
-        val ZERO = Vector3(0f, 0f, 0f)
+        fun empty() = Vector3(MemorySegment.NULL)
+        fun zero() = Vector3()
     }
 }
 
 class Vector4(
-    x: Float,
-    y: Float,
-    z: Float,
-    w: Float
-) {
-    internal var memorySegment: MemorySegment = Vector4FFM.allocate(FFM.arena)
+    override var memorySegment: MemorySegment = Vector4FFM.allocate(FFM.arena)
+) : NativeMemory<Vector4>(memorySegment) {
 
     var x: Float
         get() = Vector4FFM.z(memorySegment)
@@ -86,7 +82,12 @@ class Vector4(
         get() = Vector4FFM.w(memorySegment)
         set(value) = Vector4FFM.w(memorySegment, value)
 
-    init {
+    constructor(
+        x: Float,
+        y: Float,
+        z: Float,
+        w: Float
+    ) : this() {
         this.x = x
         this.y = y
         this.z = z
@@ -94,6 +95,7 @@ class Vector4(
     }
 
     companion object {
-        val ZERO = Vector4(0f, 0f, 0f, 0f)
+        fun empty() = Vector4(MemorySegment.NULL)
+        fun zero() = Vector4()
     }
 }

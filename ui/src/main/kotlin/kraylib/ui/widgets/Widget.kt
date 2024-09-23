@@ -2,8 +2,7 @@ package kraylib.ui.widgets
 
 import io.github.callmephil.parsecs.InputContext
 import kraylib.ui.RenderContext
-import io.github.callmephil.parsecs.graphics.border
-import io.github.callmephil.parsecs.graphics.using
+import kraylib.ui.graphics.border
 import io.github.callmephil.parsecs.ui.modifiers.PaddingValues
 import io.github.callmephil.parsecs.ui.modifiers.Placement
 import kraylib.raylib.shapes.drawRectangle
@@ -20,7 +19,7 @@ abstract class Widget {
 
     var borderColor: Color = Color.TRANSPARENT
     var onHoverBorderColor: Color = Color.TRANSPARENT
-    var borderThickness = 0f
+    var borderThickness = 0
 
     var focused: Boolean = false
 
@@ -58,33 +57,29 @@ abstract class Widget {
         color: Color
     ) {
         if (color != Color.TRANSPARENT) {
-            renderContext.shapeRenderer.using(ShapeRenderer.ShapeType.Filled) {
-                this.color = color
-                rect(
-                    constraint.x.toFloat(),
-                    constraint.y.toFloat(),
-                    constraint.width.toFloat(),
-                    constraint.height.toFloat()
-                )
-            }
+            drawRectangle(
+                constraint.x,
+                constraint.y,
+                constraint.width,
+                constraint.height,
+                color
+            )
         }
     }
 
     protected open fun drawBorder(
         renderContext: RenderContext, constraint: Constraint,
-        borderThickness: Float, color: Color
+        borderThickness: Int, color: Color
     ) {
-        if (borderThickness > 0 && color != Color.CLEAR) {
-            renderContext.shapeRenderer.using(ShapeRenderer.ShapeType.Filled) {
-                border(
-                    constraint.x.toFloat(),
-                    constraint.y.toFloat(),
-                    constraint.width.toFloat(),
-                    constraint.height.toFloat(),
-                    borderThickness,
-                    color
-                )
-            }
+        if (borderThickness > 0 && color != Color.TRANSPARENT) {
+            border(
+                constraint.x,
+                constraint.y,
+                constraint.width,
+                constraint.height,
+                borderThickness,
+                color
+            )
         }
     }
 

@@ -1,11 +1,10 @@
 package kraylib.ui.widgets
 
-import com.badlogic.gdx.graphics.Color
 import io.github.callmephil.parsecs.InputContext
 import kraylib.ui.RenderContext
 import kraylib.ui.TextLayout
 import io.github.callmephil.parsecs.graphics.gl.Opengl
-import io.github.callmephil.parsecs.graphics.using
+import kraylib.raylib.structs.Color
 
 enum class TextAlignment {
     START,

@@ -6,9 +6,7 @@ import kraylib.ffm.Camera3D as Camera3DFFM
 import kraylib.raylib.NativeMemory
 import java.lang.foreign.MemorySegment
 
-class Camera2D : NativeMemory<Camera2D>() {
-
-    override var memorySegment: MemorySegment = Camera2DFFM.allocate(FFM.arena)
+class Camera2D(memorySegment: MemorySegment = Camera2DFFM.allocate(FFM.arena)) : NativeMemory<Camera2D>(memorySegment) {
 
     var offset: Vector2 = Vector2(Camera2DFFM.offset(memorySegment))
         set(value) {
@@ -30,33 +28,25 @@ class Camera2D : NativeMemory<Camera2D>() {
 }
 
 class Camera3D(
-    position: Vector3,
-    target: Vector3,
-    up: Vector3,
-    fovy: Float,
-    projection: Int
-) {
-    internal var memorySegment: MemorySegment = Camera3DFFM.allocate(FFM.arena)
+    override val memorySegment: MemorySegment = Camera3DFFM.allocate(FFM.arena)
+) : NativeMemory<Camera3D>(memorySegment) {
 
     /** Camera position */
-    var position: Vector3 = Vector3.ZERO
+    var position: Vector3 = Vector3(Camera3DFFM.position(memorySegment))
         set(value) {
-            Camera3DFFM.position(memorySegment, value.memorySegment)
-            field = value
+            field.memorySegment.copyFrom(value.memorySegment)
         }
 
     /** Camera target it looks-at */
-    var target: Vector3 = Vector3.ZERO
+    var target: Vector3 = Vector3(Camera3DFFM.target(memorySegment))
         set(value) {
-            Camera3DFFM.target(memorySegment, value.memorySegment)
-            field = value
+            field.memorySegment.copyFrom(value.memorySegment)
         }
 
     /** Camera up vector (rotation over its axis) */
-    var up: Vector3 = Vector3.ZERO
+    var up: Vector3 = Vector3(Camera3DFFM.up(memorySegment))
         set(value) {
-            Camera3DFFM.up(memorySegment, value.memorySegment)
-            field = value
+            field.memorySegment.copyFrom(value.memorySegment)
         }
 
     /** Camera field-of-view aperture in Y (degrees) in perspective, used as near plane width in orthographic */
@@ -69,7 +59,13 @@ class Camera3D(
         get() = Camera3DFFM.projection(memorySegment)
         set(value) = Camera3DFFM.projection(memorySegment, value)
 
-    init {
+    constructor(
+        position: Vector3,
+        target: Vector3,
+        up: Vector3,
+        fovy: Float,
+        projection: Int
+    ) : this() {
         this.position = position
         this.target = target
         this.up = up

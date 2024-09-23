@@ -1,6 +1,7 @@
 package kraylib.raylib.structs
 
-import kraylib.FFM
+import kraylib.FFM.arena
+import kraylib.ffm.Texture2D
 import kraylib.ffm.Texture as TextureFFM
 import kraylib.raylib.NativeMemory
 import java.lang.foreign.MemorySegment
@@ -8,14 +9,8 @@ import java.lang.foreign.MemorySegment
 typealias Texture2D = Texture
 
 class Texture(
-    id: Int,
-    width: Int,
-    height: Int,
-    mipmaps: Int,
-    format: Int
-) : NativeMemory<Texture>() {
-
-    override var memorySegment: MemorySegment = TextureFFM.allocate(FFM.arena)
+    override var memorySegment: MemorySegment = TextureFFM.allocate(arena)
+) : NativeMemory<Texture>(memorySegment) {
 
     var id: Int
         get() = TextureFFM.id(memorySegment)
@@ -37,7 +32,13 @@ class Texture(
         get() = TextureFFM.format(memorySegment)
         set(value) = TextureFFM.format(memorySegment, value)
 
-    init {
+    constructor(
+        id: Int,
+        width: Int,
+        height: Int,
+        mipmaps: Int,
+        format: Int
+    ) : this(arena.allocate(Texture2D.layout())) {
         this.id = id
         this.width = width
         this.height = height

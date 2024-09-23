@@ -6,12 +6,8 @@ import kraylib.raylib.NativeMemory
 import java.lang.foreign.MemorySegment
 
 class Rectangle(
-    x: Float,
-    y: Float,
-    width: Float,
-    height: Float
-) : NativeMemory<Rectangle>() {
-    override var memorySegment: MemorySegment = RectangleFFM.allocate(FFM.arena)
+    memorySegment: MemorySegment = RectangleFFM.allocate(FFM.arena)
+) : NativeMemory<Rectangle>(memorySegment) {
 
     /** Rectangle top-left corner position x */
     var x: Float
@@ -33,7 +29,13 @@ class Rectangle(
         get() = RectangleFFM.height(memorySegment)
         set(value) = RectangleFFM.height(memorySegment, value)
 
-    init {
+    constructor(
+        x: Float,
+        y: Float,
+        width: Float,
+        height: Float
+    ) : this() {
+
         this.x = x
         this.y = y
         this.width = width

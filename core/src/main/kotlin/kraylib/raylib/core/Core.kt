@@ -1,7 +1,9 @@
 package kraylib.raylib.core
 
 import kraylib.ffm.Raylib
-import kraylib.FFM
+import kraylib.FFM.arena
+import kraylib.ffm.Font
+import kraylib.raylib.ext.allocate
 import kraylib.raylib.structs.Vector2
 import kraylib.raylib.structs.Camera2D
 import kraylib.raylib.structs.Color
@@ -72,7 +74,7 @@ object Keys {
 	const val KEY_EIGHT = 56
     /**  Key: 9 */
 	const val KEY_NINE = 57
-    /**  Key: ; */
+    /**  Key:  */
 	const val KEY_SEMICOLON = 59
     /**  Key: = */
 	const val KEY_EQUAL = 61
@@ -321,7 +323,7 @@ object GamepadAxis {
 fun beginDrawing() = Raylib.BeginDrawing()
 
 /** Begin 2D mode with custom camera (2D) */
-fun beginMode2D(camera2D: Camera2D) = Raylib.BeginMode2D(camera2D.memorySegment)
+fun beginMode(camera2D: Camera2D) = Raylib.BeginMode2D(camera2D.memorySegment)
 
 /** Begin drawing to render texture */
 fun beginTextureMode(renderTexture: RenderTexture) = Raylib.BeginTextureMode(renderTexture.memorySegment)
@@ -344,7 +346,7 @@ fun endTextureMode() = Raylib.EndTextureMode()
 /**
  * Initialize window and OpenGL context
  */
-fun initWindow(width: Int, height: Int, title: String) = Raylib.InitWindow(width, height, FFM.arena.allocateFrom(title))
+fun initWindow(width: Int, height: Int, title: String) = Raylib.InitWindow(width, height, arena.allocateFrom(title))
 
 /**
  * Check if a key has been pressed once
@@ -401,12 +403,12 @@ fun getMouseX() = Raylib.GetMouseX()
 fun getMouseY() = Raylib.GetMouseY()
 /** Get mouse position XY */
 fun getMousePosition(): Vector2 {
-    val segment = Raylib.GetMousePosition(FFM.arena)
+    val segment = Raylib.GetMousePosition(arena)
     return Vector2(segment)
 }
 /** Get mouse delta between frames */
 fun getMouseDelta(): Vector2 {
-    val segment = Raylib.GetMouseDelta(FFM.arena)
+    val segment = Raylib.GetMouseDelta(arena)
     return Vector2(segment)
 }
 /** Set mouse position XY */
@@ -419,7 +421,7 @@ fun setMouseScale(scaleX: Float, scaleY: Float) = Raylib.SetMouseScale(scaleX, s
 fun getMouseWheelMove() = Raylib.GetMouseWheelMove()
 /** Get mouse wheel movement for both X and Y */
 fun getMouseWheelMoveV(): Vector2 {
-    val segment = Raylib.GetMouseWheelMoveV(FFM.arena)
+    val segment = Raylib.GetMouseWheelMoveV(arena)
     return Vector2(segment)
 }
 /** Set mouse cursor */
@@ -480,3 +482,54 @@ fun getCurrentMonitor() = Raylib.GetCurrentMonitor()
 /** Check if application should close (KEY_ESCAPE pressed or windows close icon clicked) */
 fun windowShouldClose() = Raylib.WindowShouldClose()
 
+//------------------------------------------------------------------------------------
+// Font Loading and Text Drawing Functions (Module: text)
+//------------------------------------------------------------------------------------
+
+// Font loading/unloading functions
+fun getFontDefault() : Font { }                                                          // Get the default Font
+fun loadFont(fileName: String): Font  { }                                                // Load font from file into GPU memory (VRAM)
+fun loadFontEx(fileName: String, fontSize: Int, int *codepoints, codepointCount: Int): Font  {} // Load font from file with extended parameters, use NULL for codepoints and 0 for codepointCount to load the default character set
+fun loadFontFromImage(Image image, key: Color, firstChar: Int): Font  {}                       // Load font from Image (XNA style)
+fun loadFontFromMemory(fileType: String, const unsigned char *fileData, dataSize: Int, fontSize: Int, int *codepoints, codepointCount: Int): Font  {}// Load font from memory buffer, fileType refers to extension: i.e. '.ttf'
+fun isFontReady(font: Font): Boolean  {}                                                         // Check if a font is ready
+fun *loadFontData(const unsigned char *fileData, dataSize: Int, fontSize: Int, int *codepoints, codepointCount: Int, type: Int): GlyphInfo  {}// Load font data for further use
+fun genImageFontAtlas(const GlyphInfo *glyphs, Rectangle **glyphRecs, glyphCount: Int, fontSize: Int, padding: Int, packMethod: Int): Image  {}// Generate image font atlas using chars info
+fun unloadFontData(GlyphInfo *glyphs, glyphCount: Int): Unit  {}                              // Unload font chars info data (RAM)
+fun unloadFont(font: Font): Unit  {}                                                          // Unload font from GPU memory (VRAM)
+fun exportFontAsCode(font: Font, fileName: String): Boolean  {}                              // Export font as code file, returns true on success
+
+// Text drawing functions
+fun drawFPS(posX: Int, posY: Int): Unit = Raylib.DrawFPS(posX, posY)                                                    // Draw current FPS
+fun drawText(text: String, posX: Int, posY: Int, fontSize: Int, color: Color) = Raylib.DrawText(arena.allocateFrom(text), posX, posY, fontSize, color.memorySegment)  // Draw text (using default font)
+fun drawTextEx(font: Font, text: String, position: Vector2, fontSize: Float, spacing: Float, tint: Color) = Raylib.DrawTextEx(
+    font, arena.allocateFrom(text), position.memorySegment, fontSize, spacing, tint.memorySegment
+)// Draw text using font and additional parameters
+fun drawTextPro(font: Font, text: String, position: Vector2, origin: Vector2, rotation: Float, fontSize: Float, spacing: Float, tint: Color) = Raylib.DrawTextPro(
+    font, text.allocate(arena), position.memorySegment, origin.memorySegment, rotation, fontSize, spacing, tint.memorySegment
+)// Draw text using Font and pro parameters (rotation)
+fun drawTextCodepoint(font: Font, codepoint: Int, position: Vector2, fontSize: Float, tint: Color) = Raylib.DrawTextCodepoint(
+    font, codepoint, position.memorySegment, fontSize, tint.memorySegment
+) // Draw one character (codepoint)
+fun drawTextCodepoints(font: Font, const int *codepoints, codepointCount: Int, position: Vector2, fontSize: Float, spacing: Float, tint: Color): Unit  {}// Draw multiple character (codepoint)
+
+// Text font info functions
+fun setTextLineSpacing(spacing: Int) = Raylib.SetTextLineSpacing(spacing)                                                // Set vertical line spacing when drawing with line-breaks
+fun measureText(text: String, fontSize: Int) = Raylib.MeasureText(text.allocate(arena), fontSize)                                    // Measure string width for default font
+fun measureTextEx(font: Font, text: String, fontSize: Float, spacing: Float): Vector2 = Raylib.MeasureTextEx(
+    arena, font, text.allocate(arena), fontSize, spacing
+)  // Measure string size for Font
+fun getGlyphIndex(font: Font, codepoint: Int) = Raylib.GetGlyphIndex(font, codepoint)                                         // Get glyph index position in font for a codepoint (unicode character), fallback to '?' if not found
+fun getGlyphInfo(font: Font, codepoint: Int) = Raylib.GetGlyphInfo(arena, font, codepoint)                                   // Get glyph font info data for a codepoint (unicode character), fallback to '?' if not found
+fun getGlyphAtlasRec(font: Font, codepoint: Int) = Raylib.GetGlyphAtlasRec(arena, font, codepoint)                                // Get glyph rectangle in font atlas for a codepoint (unicode character), fallback to '?' if not found
+
+// Text codepoints management functions (unicode characters)
+char *loadUTF8(const int *codepoints, length: Int)                // Load UTF-8 text encoded from codepoints array
+fun unloadUTF8(text: String) = Raylib.UnloadUTF8(text.allocate(arena))                                     // Unload UTF-8 text encoded from codepoints array
+int *loadCodepoints(text: String, int *count)                // Load all codepoints from a UTF-8 text string, codepoints count returned by parameter
+fun unloadCodepoints(int *codepoints): Unit                          // Unload codepoints data from memory
+fun getCodepointCount(text: String) = Raylib.GetCodepointCount(text.allocate(arena))                        // Get total number of codepoints in a UTF-8 encoded string
+fun getCodepoint(text: String, int *codepointSize): Int  {}          // Get next codepoint in a UTF-8 encoded string, 0x3f('?') is returned on failure
+fun getCodepointNext(text: String, int *codepointSize): Int  {}      // Get next codepoint in a UTF-8 encoded string, 0x3f('?') is returned on failure
+fun getCodepointPrevious(text: String, int *codepointSize): Int  {}  // Get previous codepoint in a UTF-8 encoded string, 0x3f('?') is returned on failure
+const char *codepointToUTF8(codepoint: Int, int *utf8Size)        // Encode one codepoint into UTF-8 byte array (array length returned as parameter)
