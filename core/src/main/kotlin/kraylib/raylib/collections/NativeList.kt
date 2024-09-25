@@ -2,41 +2,110 @@ package kraylib.raylib.collections
 
 import kraylib.FFM.arena
 import kraylib.raylib.NativeMemory
+import java.lang.foreign.GroupLayout
 import java.lang.foreign.MemoryLayout
+import java.lang.foreign.MemoryLayout.PathElement.groupElement
 import java.lang.foreign.MemorySegment
+import java.lang.foreign.ValueLayout
+import java.lang.foreign.ValueLayout.OfInt
 
 abstract class AbstractNativeList<T : NativeMemory>(
     memorySegment: MemorySegment,
-    val byteSize: Long,
-) : NativeMemory(memorySegment), NativeList<T> {
+    private val ctor: (MemorySegment) -> T
+) : NativeMemory(memorySegment, layout.byteSize()), NativeList<T> {
 
-    abstract val list: List<T>
+    override var byteSize: Long = 0
+        get() = (size * elementSize) + layout.byteSize()
 
-    internal var capacity: Int = list.size
-    override var size: Int = list.size
+    protected var capacity
+        get() = memorySegment.get(capacityLayout, CAPACITY_OFFSET)
+        set(value) = memorySegment.set(capacityLayout, CAPACITY_OFFSET, value)
 
-    override fun contains(element: T) = list.contains(element)
+    internal val dataAddress
+        get() = memorySegment.address() + DATA_ADDRESS_OFFSET
 
-    override fun containsAll(elements: Collection<T>) = list.containsAll(elements)
+    private var elementSize: Int
+        get() = memorySegment.get(elementSizeLayout, ELEMENT_SIZE_OFFSET)
+        set(value) = memorySegment.set(capacityLayout, CAPACITY_OFFSET, value)
 
-    override fun get(index: Int) = list[index]
+    final override var size
+        get() = memorySegment.get(sizeLayout, SIZE_OFFSET)
+        set(value) = memorySegment.set(sizeLayout, SIZE_OFFSET, value)
 
-    override fun indexOf(element: T) = list.indexOf(element)
+    protected fun checkIndexBounds(index: Int) {
+        if (index < 0 || index >= size) throw IndexOutOfBoundsException("NativeList Index: $index, Size: $size")
+    }
+
+    override fun contains(element: T) = indexOf(element) > -1
+
+    override fun containsAll(elements: Collection<T>) = elements.all { indexOf(it) > -1 }
+
+    override fun get(index: Int): T {
+        checkIndexBounds(index)
+        return ctor(memorySegment.asSlice(index * byteSize))
+    }
+
+    override fun indexOf(element: T): Int {
+        val proxy = ctor(MemorySegment.NULL)
+
+        for (i in 0 until size) {
+            proxy.memorySegment = memorySegment.asSlice(i * byteSize)
+            if (proxy == element)
+                return i
+        }
+        return -1
+    }
 
     override fun isEmpty() = size == 0
 
-    override fun lastIndexOf(element: T) = list.lastIndexOf(element)
+    override fun lastIndexOf(element: T): Int {
+        val proxy = ctor(MemorySegment.NULL)
+
+        for (i in size - 1 downTo size) {
+            proxy.memorySegment = memorySegment.asSlice(i * byteSize)
+            if (proxy == element)
+                return i
+        }
+        return -1
+    }
 
     override fun subList(fromIndex: Int, toIndex: Int): List<T> {
         throw NotImplementedError()
     }
+
+    companion object {
+        internal val layout: GroupLayout = MemoryLayout.structLayout(
+            ValueLayout.JAVA_INT.withName("capacity"),
+            ValueLayout.JAVA_INT.withName("size"),
+            ValueLayout.JAVA_INT.withName("elementSize")
+        ).withName("AbstractNativeList")
+
+        internal val capacityLayout = layout.select(groupElement("capacity")) as OfInt
+        internal const val CAPACITY_OFFSET = 0L
+
+        internal val sizeLayout = layout.select(groupElement("size")) as OfInt
+        internal const val SIZE_OFFSET = 4L
+
+        internal val elementSizeLayout = layout.select(groupElement("elementSize")) as OfInt
+        internal const val ELEMENT_SIZE_OFFSET = 8L
+
+        internal const val DATA_ADDRESS_OFFSET = 12L
+    }
 }
 
-class MutableNativeListImpl<T : NativeMemory>(
+internal class MutableNativeListImpl<T : NativeMemory>(
     memorySegment: MemorySegment,
-    override val list: MutableList<T>,
-    byteSize: Long,
-) : AbstractNativeList<T>(memorySegment, byteSize), MutableNativeList<T> {
+    ctor: (MemorySegment) -> T
+) : AbstractNativeList<T>(memorySegment, ctor), MutableNativeList<T> {
+
+    constructor(
+        memorySegment: MemorySegment,
+        elementCount: Int,
+        ctor: (MemorySegment) -> T
+    ) : this(memorySegment, ctor) {
+        capacity = elementCount
+        this.size = elementCount
+    }
 
     fun addContiguousItems(items: List<T>) {
         if (items.isEmpty())
@@ -48,7 +117,6 @@ class MutableNativeListImpl<T : NativeMemory>(
         val memoryOffset = size * byteSize
 
         MemorySegment.copy(items[0].memorySegment, 0, memorySegment, memoryOffset, totalBytes)
-        list.addAll(items)
 
         for (i in items.indices) {
             items[i].readdress(addressAt(size + i))
@@ -64,13 +132,11 @@ class MutableNativeListImpl<T : NativeMemory>(
 
     override fun add(index: Int, element: T) {
         ensureCapacity(size + 1)
-        if (index < size) {
+        if (index < size)
             shiftRight(index, 1)
-        }
 
         val newItemSegment = MemorySegment.ofAddress(addressAt(index)).reinterpret(byteSize).copyFrom(element.memorySegment)
         element.memorySegment = newItemSegment
-        list.add(index, element)
     }
 
     override fun addAll(elements: Collection<T>) = addAll(size, elements)
@@ -80,44 +146,34 @@ class MutableNativeListImpl<T : NativeMemory>(
         shiftRight(index, elements.size)
 
         elements.forEachIndexed { i, item ->
-            val newMemorySegment = MemorySegment.ofAddress((index + i) * byteSize).reinterpret(byteSize).copyFrom(item.memorySegment)
-            item.memorySegment = newMemorySegment
+            MemorySegment.copy(item.memorySegment, 0, memorySegment, (index + i) * byteSize, byteSize)
         }
-
-        list.addAll(elements)
-
         return true
     }
 
     private fun addressAt(at: Int) = memorySegment.address() + (byteSize * at)
 
     override fun clear() {
-        MemorySegment.ofAddress(address).reinterpret(size * byteSize).fill(0)
         size = 0
-        list.clear()
     }
 
     private fun ensureCapacity(target: Int) {
         if (target < capacity)
             return
 
-        val newCapacity = (target * 1.5f).toInt()
+        val newCapacity = if (capacity == 0) target else target * 2
         val newMemorySegment = arena.allocate(byteSize * newCapacity)
-        newMemorySegment.copyFrom(memorySegment)
-
-        list.forEachIndexed { index, item ->
-            val newItemMemorySegment = MemorySegment.ofAddress(newMemorySegment.address() + byteSize * index).reinterpret(byteSize)
-            item.memorySegment = newItemMemorySegment
-        }
+        MemorySegment.copy(memorySegment, 0, newMemorySegment, 0, byteSize * size)
 
         capacity = newCapacity
+        memorySegment = newMemorySegment
     }
 
     override fun iterator() = listIterator()
 
-    override fun listIterator(): MutableListIterator<T> = MutableNativeListIterator(list.listIterator())
+    override fun listIterator(): MutableListIterator<T> = MutableNativeListIterator(this, size)
 
-    override fun listIterator(index: Int): MutableListIterator<T> = MutableNativeListIterator(list.listIterator(index))
+    override fun listIterator(index: Int): MutableListIterator<T> = MutableNativeListIterator(this, size)
 
     override fun remove(element: T): Boolean {
         val index = indexOf(element)
@@ -134,59 +190,51 @@ class MutableNativeListImpl<T : NativeMemory>(
     }
 
     override fun removeAt(index: Int): T {
-        shiftLeft(index + 1, 1)
-        size -= 1
-        return list.removeLast()
+        checkIndexBounds(index)
+        val oldValue = get(index)
+        shiftLeft(index + 1)
+        size--
+        return oldValue
     }
 
     override fun retainAll(elements: Collection<T>): Boolean {
         val indices = elements.map { indexOf(it) }.sorted()
-        var cursor = 0
+        var cursor = -1
 
         indices.forEach {
+            cursor++
+
             if (cursor == it)
                 return@forEach
-            list[cursor].memorySegment.copyFrom(list[it].memorySegment)
-            cursor += 1
+            MemorySegment.copy(memorySegment, it * byteSize, memorySegment, cursor * byteSize, byteSize)
         }
 
-        IntRange(0, elements.size).forEach { list.removeLast() }
-        size -= elements.size
-
+        size = if (cursor > -1) cursor else 0
         return true
     }
 
     override fun set(index: Int, element: T): T {
-        val currentItem = list[index]
+        checkIndexBounds(index)
+        val currentItem = get(index)
         currentItem.memorySegment.copyFrom(element.memorySegment)
         return currentItem
     }
 
-    private fun shiftLeft(at: Int, amount: Int) {
+    private fun shiftLeft(at: Int, amount: Int = 1) {
 
         val totalBytes = amount * byteSize
         val startOffset = at * byteSize
         val targetOffset = (at - amount) * byteSize
 
         MemorySegment.copy(memorySegment, startOffset, memorySegment, targetOffset, totalBytes)
-
-//        for (i in IntProgression.fromClosedRange(at, size - 1, 1)) {
-//            val itemNewMemorySegment = MemorySegment
-//                .ofAddress((i - amount) * byteSize)
-//                .reinterpret(byteSize)
-//            list[i].memorySegment = itemNewMemorySegment
-//        }
     }
 
     private fun shiftRight(at: Int, amount: Int) {
         ensureCapacity(size + amount)
 
-        for (i in IntProgression.fromClosedRange(size - 1, at, -1)) {
-            val itemNewMemorySegment = MemorySegment
-                .ofAddress((i + amount) * byteSize)
-                .reinterpret(byteSize)
-                .copyFrom(list[i].memorySegment)
-            list[i].memorySegment = itemNewMemorySegment
+        for (i in (size - 1) downTo at) {
+            val memorySegmentSlice = memorySegment.asSlice((i + amount) * byteSize, byteSize)
+            MemorySegment.copy(memorySegmentSlice, 0, memorySegment, (i + amount) * byteSize, byteSize)
         }
     }
 
@@ -194,19 +242,30 @@ class MutableNativeListImpl<T : NativeMemory>(
         throw NotImplementedError()
     }
 
-    class MutableNativeListIterator<T>(private val iterator: MutableListIterator<T>) : MutableListIterator<T> {
+    class MutableNativeListIterator<T : NativeMemory>(private val list: NativeList<T>, private val size: Int) : MutableListIterator<T> {
+        private var cursor = -1
+
         override fun add(element: T) {
             throw NotImplementedError()
         }
 
-        override fun hasNext() = iterator.hasNext()
-        override fun hasPrevious() = iterator.hasPrevious()
+        override fun hasNext() = nextIndex() < size
+        override fun hasPrevious() = previousIndex() >= 0
 
-        override fun next() = iterator.next()
-        override fun nextIndex() = iterator.nextIndex()
+        override fun next(): T {
+            cursor++
+            return list[cursor]
+        }
+        override fun nextIndex() = cursor + 1
 
-        override fun previous() = iterator.previous()
-        override fun previousIndex() = iterator.previousIndex()
+        override fun previous(): T {
+            cursor--
+            if (cursor < 0)
+                throw NoSuchElementException("NativeListIterator: Not element at index $cursor")
+
+            return list[cursor]
+        }
+        override fun previousIndex() = cursor - 1
 
         override fun remove() {
             throw NotImplementedError()
@@ -220,15 +279,46 @@ class MutableNativeListImpl<T : NativeMemory>(
 
 class NativeListImpl<T : NativeMemory>(
     memorySegment: MemorySegment,
-    override val list: List<T>,
-    byteSize: Long
-) : AbstractNativeList<T>(memorySegment, byteSize) {
+    ctor: (MemorySegment) -> T
+) : AbstractNativeList<T>(memorySegment, ctor) {
 
-    override fun iterator(): Iterator<T> = list.iterator()
+    constructor(
+        memorySegment: MemorySegment,
+        elementCount: Int,
+        ctor: (MemorySegment) -> T
+    ) : this(memorySegment, ctor) {
+        capacity = elementCount
+        this.size = elementCount
+    }
 
-    override fun listIterator(): ListIterator<T> = list.listIterator()
+    override fun iterator(): Iterator<T> = NativeListIterator(this, size)
 
-    override fun listIterator(index: Int): ListIterator<T> = list.listIterator(index)
+    override fun listIterator(): ListIterator<T> = NativeListIterator(this, size)
+
+    override fun listIterator(index: Int): ListIterator<T> = NativeListIterator(this, size)
+
+    class NativeListIterator<T : NativeMemory>(private val list: NativeList<T>, private val size: Int) : ListIterator<T> {
+
+        private var cursor = -1
+
+        override fun hasNext() = nextIndex() < size
+        override fun hasPrevious() = previousIndex() >= 0
+
+        override fun next(): T {
+            cursor++
+            return list[cursor]
+        }
+        override fun nextIndex() = cursor + 1
+
+        override fun previous(): T {
+            cursor--
+            if (cursor < 0)
+                throw NoSuchElementException("NativeListIterator: Not element at index $cursor")
+
+            return list[cursor]
+        }
+        override fun previousIndex() = cursor - 1
+    }
 }
 
 interface NativeList<T : NativeMemory> : List<T>
@@ -242,50 +332,41 @@ interface MutableNativeList<T : NativeMemory> : MutableList<T>, NativeList<T>
  * If list is already in contiguous memory then returns a [MutableNativeList] wrapped around the list.
  * Else a new allocation will be made, data from the list copied to that memory and then update the list inplace to point to the new memory.
  */
-fun <T: NativeMemory> mutableNativeListOf(list: MutableList<T>, byteSize: Long): MutableNativeList<T> {
+fun <T: NativeMemory> mutableNativeListOf(list: MutableList<T>, elementSize: Long, ctor: (MemorySegment) -> T): MutableNativeList<T> {
     if (list.isEmpty())
-        return MutableNativeListImpl(MemorySegment.NULL, list, byteSize)
+        return MutableNativeListImpl(arena.allocate(AbstractNativeList.sizeLayout), ctor)
 
     val startAddress = list[0].address
     var isContiguous = true
 
     for (i in 1 ..< list.size) {
-        if (list[i].address != startAddress + (i * byteSize)) {
+        if (list[i].address != startAddress + (i * elementSize)) {
             isContiguous = false
             break
         }
     }
 
-    if (isContiguous)
-        return MutableNativeListImpl(list[0].memorySegment, list, byteSize)
+    if (!isContiguous)
+        list.makeContiguous()
 
-    list.makeContiguous()
+    val dataSize = list.size * elementSize
+    val newMemorySegment = arena.allocate(AbstractNativeList.layout.byteSize() + dataSize)
 
-    return MutableNativeListImpl(list[0].memorySegment, list, byteSize)
+    MemorySegment.copy(list[0].memorySegment, 0, newMemorySegment, AbstractNativeList.layout.byteSize(), dataSize)
+    return MutableNativeListImpl(newMemorySegment, list.size, ctor)
 }
 
 /**
- * Creates a [MutableNativeList] starting at the [memorySegment]. The elements should already be contiguous in memory
+ * Creates a [MutableNativeList] starting at the [memorySegment]. The data the this [memorySegment] should already be a [MutableNativeList]
  *
  * @param memorySegment Starting location for the native list
- * @param layout The memory layout of the type of the list
- * @param count The count of how many elements are in that memory location
- * @param init Construct a JVM object from the [MemorySegment] that is the start location of the object in memory
- * @return Mutable list that will contain elements in contiguous memory
+ * @param ctor Construct a JVM object from the [MemorySegment] that is the start location of the object in memory
+ * @return [MutableNativeList] that will wrap the elements in [memorySegment]
  */
-inline fun <R : NativeMemory> mutableNativeListOf(memorySegment: MemorySegment, layout: MemoryLayout, count: Int = -1, init: (MemorySegment) -> R): MutableNativeList<R> {
-    val itemList = mutableListOf<R>()
-    val elementSize = layout.byteSize()
-    val elementCount = if (count > -1) count else 0
-
-    for (i in 0 ..< elementCount) {
-        val itemMemorySegment = MemorySegment.ofAddress(memorySegment.address() + elementSize * i).reinterpret(elementSize)
-        val item = init(itemMemorySegment)
-        itemList.add(item)
-    }
-
-    return MutableNativeListImpl(memorySegment, itemList, elementSize)
-}
+fun <R : NativeMemory> mutableNativeListOf(
+    memorySegment: MemorySegment,
+    ctor: (MemorySegment) -> R
+): MutableNativeList<R> = MutableNativeListImpl(memorySegment, ctor)
 
 /**
  * Turn a mutable list into a MutableNativeList
@@ -294,50 +375,41 @@ inline fun <R : NativeMemory> mutableNativeListOf(memorySegment: MemorySegment, 
  * If list is already in contiguous memory then returns a [NativeList] wrapped around the list.
  * Else a new allocation will be made, data from the list copied to that memory and then update the list inplace to point to the new memory.
  */
-fun <T: NativeMemory> nativeListOf(list: List<T>, byteSize: Long): NativeList<T> {
+fun <T: NativeMemory> nativeListOf(list: List<T>, elementSize: Long, ctor: (MemorySegment) -> T): NativeList<T> {
     if (list.isEmpty())
-        return NativeListImpl(MemorySegment.NULL, list, byteSize)
+        return NativeListImpl(arena.allocate(AbstractNativeList.sizeLayout), ctor)
 
     val startAddress = list[0].address
     var isContiguous = true
 
     for (i in 1 ..< list.size) {
-        if (list[i].address != startAddress + (i * byteSize)) {
+        if (list[i].address != startAddress + (i * elementSize)) {
             isContiguous = false
             break
         }
     }
 
-    if (isContiguous)
-        return NativeListImpl(list[0].memorySegment, list, byteSize)
+    if (!isContiguous)
+        list.makeContiguous()
 
-    list.makeContiguous()
+    val dataSize = list.size * elementSize
+    val newMemorySegment = arena.allocate(AbstractNativeList.layout.byteSize() + dataSize)
 
-    return NativeListImpl(list[0].memorySegment, list, byteSize)
+    MemorySegment.copy(list[0].memorySegment, 0, newMemorySegment, AbstractNativeList.layout.byteSize(), dataSize)
+    return NativeListImpl(newMemorySegment, list.size, ctor)
 }
 
 /**
- * Creates a [NativeList] starting at the [memorySegment]. The elements should already be contiguous in memory
+ * Creates a [NativeList] starting at the [memorySegment]. The data the this [memorySegment] should already be a [NativeList]
  *
  * @param memorySegment Starting location for the native list
- * @param layout The memory layout of the type of the list
- * @param count The count of how many elements are in that memory location
- * @param init Construct a JVM object from the [MemorySegment] that is the start location of the object in memory
- * @return Mutable list that will contain elements in contiguous memory
+ * @param ctor Construct a JVM object from the [MemorySegment] that is the start location of the object in memory
+ * @return [NativeList] that will wrap the elements in [memorySegment]
  */
-inline fun <R : NativeMemory> nativeListOf(memorySegment: MemorySegment, layout: MemoryLayout, count: Int = -1, init: (MemorySegment) -> R): NativeList<R> {
-    val itemList = mutableListOf<R>()
-    val elementSize = layout.byteSize()
-    val elementCount = if (count > -1) count else 0
-
-    for (i in 0 ..< elementCount) {
-        val itemMemorySegment = MemorySegment.ofAddress(memorySegment.address() + elementSize * i).reinterpret(elementSize)
-        val item = init(itemMemorySegment)
-        itemList.add(item)
-    }
-
-    return NativeListImpl(memorySegment, itemList.toList(), elementSize)
-}
+fun <R : NativeMemory> nativeListOf(
+    memorySegment: MemorySegment,
+    ctor: (MemorySegment) -> R
+): NativeList<R> = NativeListImpl(memorySegment, ctor)
 
 fun <T : NativeMemory> List<T>.allocateContiguous(init: (MemorySegment) -> T): MutableList<T> {
     val totalBytes = this.sumOf { it.memorySegment.byteSize() }

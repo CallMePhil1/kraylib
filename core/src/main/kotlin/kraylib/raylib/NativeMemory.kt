@@ -3,9 +3,9 @@ package kraylib.raylib
 import java.lang.foreign.MemorySegment
 
 abstract class NativeMemory(
-    internal var memorySegment: MemorySegment
+    internal var memorySegment: MemorySegment,
+    internal open var byteSize: Long = memorySegment.byteSize()
 ) {
-
     val address get() = memorySegment.address()
 
     override fun equals(other: Any?): Boolean {
