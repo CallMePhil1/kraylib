@@ -7,7 +7,7 @@ import java.lang.foreign.MemorySegment
 
 class Rectangle(
     memorySegment: MemorySegment = RectangleFFM.allocate(FFM.arena)
-) : NativeMemory<Rectangle>(memorySegment) {
+) : NativeMemory(memorySegment) {
 
     /** Rectangle top-left corner position x */
     var x: Float
@@ -35,7 +35,6 @@ class Rectangle(
         width: Float,
         height: Float
     ) : this() {
-
         this.x = x
         this.y = y
         this.width = width

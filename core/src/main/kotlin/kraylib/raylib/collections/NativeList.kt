@@ -14,8 +14,9 @@ abstract class AbstractNativeList<T : NativeMemory>(
     private val ctor: (MemorySegment) -> T
 ) : NativeMemory(memorySegment, layout.byteSize()), NativeList<T> {
 
-    override var byteSize: Long = 0
+    override var byteSize: Long
         get() = (size * elementSize) + layout.byteSize()
+        set(value) {}
 
     protected var capacity
         get() = memorySegment.get(capacityLayout, CAPACITY_OFFSET)
@@ -363,10 +364,10 @@ fun <T: NativeMemory> mutableNativeListOf(list: MutableList<T>, elementSize: Lon
  * @param ctor Construct a JVM object from the [MemorySegment] that is the start location of the object in memory
  * @return [MutableNativeList] that will wrap the elements in [memorySegment]
  */
-fun <R : NativeMemory> mutableNativeListOf(
+fun <T : NativeMemory> mutableNativeListOf(
     memorySegment: MemorySegment,
-    ctor: (MemorySegment) -> R
-): MutableNativeList<R> = MutableNativeListImpl(memorySegment, ctor)
+    ctor: (MemorySegment) -> T
+): MutableNativeList<T> = MutableNativeListImpl(memorySegment, ctor)
 
 /**
  * Turn a mutable list into a MutableNativeList
@@ -406,10 +407,10 @@ fun <T: NativeMemory> nativeListOf(list: List<T>, elementSize: Long, ctor: (Memo
  * @param ctor Construct a JVM object from the [MemorySegment] that is the start location of the object in memory
  * @return [NativeList] that will wrap the elements in [memorySegment]
  */
-fun <R : NativeMemory> nativeListOf(
+fun <T : NativeMemory> nativeListOf(
     memorySegment: MemorySegment,
-    ctor: (MemorySegment) -> R
-): NativeList<R> = NativeListImpl(memorySegment, ctor)
+    ctor: (MemorySegment) -> T
+): NativeList<T> = NativeListImpl(memorySegment, ctor)
 
 fun <T : NativeMemory> List<T>.allocateContiguous(init: (MemorySegment) -> T): MutableList<T> {
     val totalBytes = this.sumOf { it.memorySegment.byteSize() }

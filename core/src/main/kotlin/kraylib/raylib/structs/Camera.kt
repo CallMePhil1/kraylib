@@ -6,7 +6,9 @@ import kraylib.ffm.Camera3D as Camera3DFFM
 import kraylib.raylib.NativeMemory
 import java.lang.foreign.MemorySegment
 
-class Camera2D(memorySegment: MemorySegment = Camera2DFFM.allocate(FFM.arena)) : NativeMemory<Camera2D>(memorySegment) {
+class Camera2D(
+    memorySegment: MemorySegment = Camera2DFFM.allocate(FFM.arena)
+) : NativeMemory(memorySegment) {
 
     var offset: Vector2 = Vector2(Camera2DFFM.offset(memorySegment))
         set(value) {
@@ -28,8 +30,8 @@ class Camera2D(memorySegment: MemorySegment = Camera2DFFM.allocate(FFM.arena)) :
 }
 
 class Camera3D(
-    override val memorySegment: MemorySegment = Camera3DFFM.allocate(FFM.arena)
-) : NativeMemory<Camera3D>(memorySegment) {
+    memorySegment: MemorySegment = Camera3DFFM.allocate(FFM.arena)
+) : NativeMemory(memorySegment) {
 
     /** Camera position */
     var position: Vector3 = Vector3(Camera3DFFM.position(memorySegment))

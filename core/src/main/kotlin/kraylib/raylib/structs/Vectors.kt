@@ -8,8 +8,8 @@ import kraylib.raylib.NativeMemory
 import java.lang.foreign.MemorySegment
 
 class Vector2(
-    override var memorySegment: MemorySegment = Vector2FFM.allocate(FFM.arena)
-) : NativeMemory<Vector2>(memorySegment) {
+    memorySegment: MemorySegment = Vector2FFM.allocate(FFM.arena)
+) : NativeMemory(memorySegment) {
 
     constructor(x: Float, y: Float) : this() {
         this.x = x
@@ -25,14 +25,15 @@ class Vector2(
         set(value) = Vector2FFM.y(memorySegment, value)
 
     companion object {
+        val byteSize = Vector2FFM.layout().byteSize()
         fun empty() = Vector2(MemorySegment.NULL)
         fun zero() = Vector2()
     }
 }
 
 class Vector3(
-    override var memorySegment: MemorySegment = Vector3FFM.allocate(FFM.arena)
-) : NativeMemory<Vector3>(memorySegment) {
+    memorySegment: MemorySegment = Vector3FFM.allocate(FFM.arena)
+) : NativeMemory(memorySegment) {
 
     var x: Float
         get() = Vector3FFM.x(memorySegment)
@@ -63,8 +64,8 @@ class Vector3(
 }
 
 class Vector4(
-    override var memorySegment: MemorySegment = Vector4FFM.allocate(FFM.arena)
-) : NativeMemory<Vector4>(memorySegment) {
+    memorySegment: MemorySegment = Vector4FFM.allocate(FFM.arena)
+) : NativeMemory(memorySegment) {
 
     var x: Float
         get() = Vector4FFM.z(memorySegment)

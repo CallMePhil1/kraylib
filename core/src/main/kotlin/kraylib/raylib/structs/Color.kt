@@ -6,17 +6,24 @@ import kraylib.raylib.NativeMemory
 import java.lang.foreign.MemorySegment
 
 class Color internal constructor(
-    override var memorySegment: MemorySegment = ColorFFM.allocate(FFM.arena)
-) : NativeMemory<Color>(memorySegment) {
+    memorySegment: MemorySegment = ColorFFM.allocate(FFM.arena)
+) : NativeMemory(memorySegment) {
 
-    var r = ColorFFM.r(memorySegment)
-        private set
-    var g = ColorFFM.g(memorySegment)
-        private set
-    var b = ColorFFM.b(memorySegment)
-        private set
-    var a = ColorFFM.a(memorySegment)
-        private set
+    var r
+        get() = ColorFFM.r(memorySegment)
+        private set(value) = ColorFFM.r(memorySegment, value)
+
+    var g
+        get() = ColorFFM.g(memorySegment)
+        private set(value) = ColorFFM.g(memorySegment, value)
+
+    var b
+        get() = ColorFFM.b(memorySegment)
+        private set(value) = ColorFFM.b(memorySegment, value)
+
+    var a
+        get() = ColorFFM.a(memorySegment)
+        private set(value) = ColorFFM.a(memorySegment, value)
 
     internal constructor(r: UByte, g: UByte, b: UByte, a: UByte) : this() {
         this.r = r.toByte()

@@ -1,13 +1,12 @@
 package kraylib.raylib.core
 
+import kraylib.FFM
 import kraylib.ffm.Raylib
 import kraylib.FFM.arena
-import kraylib.ffm.Font
+import kraylib.raylib.Pointer
+import kraylib.raylib.collections.NativeList
 import kraylib.raylib.ext.allocate
-import kraylib.raylib.structs.Vector2
-import kraylib.raylib.structs.Camera2D
-import kraylib.raylib.structs.Color
-import kraylib.raylib.structs.RenderTexture
+import kraylib.raylib.structs.*
 
 object CameraMode {
     /** Custom camera */
@@ -486,18 +485,20 @@ fun windowShouldClose() = Raylib.WindowShouldClose()
 // Font Loading and Text Drawing Functions (Module: text)
 //------------------------------------------------------------------------------------
 
+fun test() = Raylib.LoadFontFromMemory()
+
 // Font loading/unloading functions
-fun getFontDefault() : Font { }                                                          // Get the default Font
-fun loadFont(fileName: String): Font  { }                                                // Load font from file into GPU memory (VRAM)
+fun getFontDefault() = Font(Raylib.GetFontDefault(arena))                                                        // Get the default Font
+fun loadFont(fileName: String) = Font(Raylib.LoadFont(arena, fileName.allocate(arena)))                                               // Load font from file into GPU memory (VRAM)
 fun loadFontEx(fileName: String, fontSize: Int, int *codepoints, codepointCount: Int): Font  {} // Load font from file with extended parameters, use NULL for codepoints and 0 for codepointCount to load the default character set
-fun loadFontFromImage(Image image, key: Color, firstChar: Int): Font  {}                       // Load font from Image (XNA style)
-fun loadFontFromMemory(fileType: String, const unsigned char *fileData, dataSize: Int, fontSize: Int, int *codepoints, codepointCount: Int): Font  {}// Load font from memory buffer, fileType refers to extension: i.e. '.ttf'
-fun isFontReady(font: Font): Boolean  {}                                                         // Check if a font is ready
+fun loadFontFromImage(image: Image, key: Color, firstChar: Int) = Font(Raylib.LoadFontFromImage(arena, image.memorySegment, key.memorySegment, firstChar))                       // Load font from Image (XNA style)
+fun loadFontFromMemory(fileType: String, fileData: Pointer<UByte>, dataSize: Int, fontSize: Int, int *codepoints, codepointCount: Int) = Rayl // Load font from memory buffer, fileType refers to extension: i.e. '.ttf'
+fun isFontReady(font: Font) = Raylib.IsFontReady(font.memorySegment)                                                        // Check if a font is ready
 fun *loadFontData(const unsigned char *fileData, dataSize: Int, fontSize: Int, int *codepoints, codepointCount: Int, type: Int): GlyphInfo  {}// Load font data for further use
 fun genImageFontAtlas(const GlyphInfo *glyphs, Rectangle **glyphRecs, glyphCount: Int, fontSize: Int, padding: Int, packMethod: Int): Image  {}// Generate image font atlas using chars info
-fun unloadFontData(GlyphInfo *glyphs, glyphCount: Int): Unit  {}                              // Unload font chars info data (RAM)
-fun unloadFont(font: Font): Unit  {}                                                          // Unload font from GPU memory (VRAM)
-fun exportFontAsCode(font: Font, fileName: String): Boolean  {}                              // Export font as code file, returns true on success
+fun unloadFontData(glyphs: NativeList<GlyphInfo>, glyphCount: Int) = Raylib.UnloadFontData(glyphs.memorySegment, glyphCount)                             // Unload font chars info data (RAM)
+fun unloadFont(font: Font) = Raylib.UnloadFont(font.memorySegment)                                                          // Unload font from GPU memory (VRAM)
+fun exportFontAsCode(font: Font, fileName: String) = Raylib.ExportFontAsCode(font.memorySegment, fileName.allocate(arena))                             // Export font as code file, returns true on success
 
 // Text drawing functions
 fun drawFPS(posX: Int, posY: Int): Unit = Raylib.DrawFPS(posX, posY)                                                    // Draw current FPS

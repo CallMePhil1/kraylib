@@ -5,9 +5,10 @@ import kraylib.ffm.Image as ImageFFM
 import kraylib.raylib.NativeMemory
 import java.lang.foreign.MemorySegment
 
+/** Image, pixel data stored in CPU memory (RAM) */
 class Image(
-    override val memorySegment: MemorySegment = ImageFFM.allocate(FFM.arena)
-) : NativeMemory<Image>(memorySegment) {
+    memorySegment: MemorySegment = ImageFFM.allocate(FFM.arena)
+) : NativeMemory(memorySegment) {
 
     /** Image base width */
     var width: Int
@@ -28,9 +29,9 @@ class Image(
     var format: Int
         get() = ImageFFM.format(memorySegment)
         set(value) = ImageFFM.format(memorySegment, value)
-}
 
-// Image, pixel data stored in CPU memory (RAM)
-typedef struct Image {
-    void *data;             // Image raw data
-} Image;
+    /** Image raw data */
+    var data: MemorySegment
+        get() = ImageFFM.data(memorySegment)
+        set(value) = ImageFFM.data(memorySegment, value)
+}

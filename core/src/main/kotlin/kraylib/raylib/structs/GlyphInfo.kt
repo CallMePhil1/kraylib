@@ -6,7 +6,7 @@ import kraylib.raylib.NativeMemory
 import java.lang.foreign.MemorySegment
 
 class GlyphInfo(
-    override val memorySegment: MemorySegment = GlyphInfoFFM.allocate(FFM.arena)
+    memorySegment: MemorySegment = GlyphInfoFFM.allocate(FFM.arena)
 ) : NativeMemory<GlyphInfo>(memorySegment) {
     
     /** Character value (Unicode) */

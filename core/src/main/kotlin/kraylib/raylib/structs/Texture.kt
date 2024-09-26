@@ -9,8 +9,8 @@ import java.lang.foreign.MemorySegment
 typealias Texture2D = Texture
 
 class Texture(
-    override var memorySegment: MemorySegment = TextureFFM.allocate(arena)
-) : NativeMemory<Texture>(memorySegment) {
+    memorySegment: MemorySegment = TextureFFM.allocate(arena)
+) : NativeMemory(memorySegment) {
 
     var id: Int
         get() = TextureFFM.id(memorySegment)

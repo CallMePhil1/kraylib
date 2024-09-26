@@ -2,15 +2,12 @@ package kraylib.raylib.structs
 
 import kraylib.FFM
 import kraylib.ffm.Font
-import kraylib.ffm.GlyphInfo as GlyphInfoFFM
 import kraylib.raylib.NativeMemory
-import kraylib.raylib.collections.NativeList
-import kraylib.raylib.collections.nativeListOf
 import java.lang.foreign.MemorySegment
 
 class Font(
-    override val memorySegment: MemorySegment = Font.allocate(FFM.arena)
-) : NativeMemory<Font>(memorySegment) {
+    memorySegment: MemorySegment = Font.allocate(FFM.arena)
+) : NativeMemory(memorySegment) {
 
     /** Base size (default chars height) */
     var baseSize: Int
@@ -34,8 +31,8 @@ class Font(
         }
 
     /** Rectangles in texture for the glyphs */
-    val rectangles: NativeList<Rectangle> = nativeListOf(Font.recs(memorySegment), Font.layout(), -1) { Rectangle(it) }
+    val rectangles: MemorySegment = Font.recs(memorySegment)
 
     /** Glyphs info data */
-    val glyphs: NativeList<GlyphInfo> = nativeListOf(Font.glyphs(memorySegment), GlyphInfoFFM.layout(), -1) { GlyphInfo(it) }
+    val glyphs: MemorySegment = Font.glyphs(memorySegment)
 }

@@ -6,8 +6,8 @@ import kraylib.raylib.NativeMemory
 import java.lang.foreign.MemorySegment
 
 class RenderTexture(
-    override var memorySegment: MemorySegment = RenderTexture.allocate(FFM.arena)
-) : NativeMemory<RenderTexture>(memorySegment) {
+    memorySegment: MemorySegment = RenderTexture.allocate(FFM.arena)
+) : NativeMemory(memorySegment) {
 
     var id: Int
         get() = RenderTexture.id(memorySegment)
