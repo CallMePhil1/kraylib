@@ -7,7 +7,7 @@ import java.lang.foreign.MemorySegment
 
 class GlyphInfo(
     memorySegment: MemorySegment = GlyphInfoFFM.allocate(FFM.arena)
-) : NativeMemory<GlyphInfo>(memorySegment) {
+) : NativeMemory(memorySegment) {
     
     /** Character value (Unicode) */
     var value: Int

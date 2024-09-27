@@ -4,13 +4,16 @@ import java.lang.foreign.MemorySegment
 
 abstract class NativeMemory(
     internal var memorySegment: MemorySegment,
-    internal open var byteSize: Long = memorySegment.byteSize()
 ) {
     val address get() = memorySegment.address()
 
+    val byteSize: Long get() = memorySegment.byteSize()
+
     override fun equals(other: Any?): Boolean {
         if (other is NativeMemory) {
-            return address == other.address
+            if (byteSize != other.byteSize)
+                return false
+            return memorySegment.mismatch(other.memorySegment) == -1L
         }
         return false
     }

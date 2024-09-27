@@ -2,6 +2,7 @@ package kraylib.raylib.shapes
 
 import kraylib.FFM.arena
 import kraylib.ffm.Raylib
+import kraylib.raylib.collections.AbstractNativeList
 import kraylib.raylib.collections.NativeList
 import kraylib.raylib.structs.Color
 import kraylib.raylib.structs.Rectangle
@@ -26,7 +27,7 @@ fun drawLineV(startPos: Vector2, endPos: Vector2, color: Color) = Raylib.DrawLin
 /** Draw a line (using triangles/quads) */
 fun drawLineEx(startPos: Vector2, endPos: Vector2, thick: Float, color: Color) = Raylib.DrawLineEx(startPos.memorySegment, endPos.memorySegment, thick, color.memorySegment)
 /** Draw lines sequence (using gl lines) */
-fun drawLineStrip(points: NativeList<Vector2>, color: Color) = Raylib.DrawLineStrip(points.memorySegment, points.size, color.memorySegment)
+fun drawLineStrip(points: AbstractNativeList<Vector2>, color: Color) = Raylib.DrawLineStrip(points.data, points.size, color.memorySegment)
 /** Draw line segment cubic-bezier in-out interpolation */
 fun drawLineBezier(startPos: Vector2, endPos: Vector2, thick: Float, color: Color) = Raylib.DrawLineBezier(startPos.memorySegment, endPos.memorySegment, thick, color.memorySegment)
 /** Draw a color-filled circle */
@@ -78,9 +79,9 @@ fun drawTriangle(v1: Vector2, v2: Vector2, v3: Vector2, color: Color) = Raylib.D
 /** Draw triangle outline (vertex in counter-clockwise order!) */
 fun drawTriangleLines(v1: Vector2, v2: Vector2, v3: Vector2, color: Color) = Raylib.DrawTriangleLines(v1.memorySegment, v2.memorySegment, v3.memorySegment, color.memorySegment)
 /** Draw a triangle fan defined by points (first vertex is the center) */
-fun drawTriangleFan(points: NativeList<Vector2>, color: Color) = Raylib.DrawTriangleFan(points.memorySegment, points.size, color.memorySegment)
+fun drawTriangleFan(points: AbstractNativeList<Vector2>, color: Color) = Raylib.DrawTriangleFan(points.data, points.size, color.memorySegment)
 /** Draw a triangle strip defined by points */
-fun drawTriangleStrip(points: NativeList<Vector2>, color: Color) = Raylib.DrawTriangleStrip(points.memorySegment, points.size, color.memorySegment)
+fun drawTriangleStrip(points: AbstractNativeList<Vector2>, color: Color) = Raylib.DrawTriangleStrip(points.data, points.size, color.memorySegment)
 /** Draw a regular polygon (Vector version) */
 fun drawPoly(center: Vector2, sides: Int, radius: Float, rotation: Float, color: Color) = Raylib.DrawPoly(center.memorySegment, sides, radius, rotation, color.memorySegment)
 /** Draw a polygon outline of n sides */
@@ -90,15 +91,15 @@ fun drawPolyLinesEx(center: Vector2, sides: Int, radius: Float, rotation: Float,
 
 // Splines drawing functions
 /** Draw spline: Linear, minimum 2 points */
-fun drawSplineLinear(points: NativeList<Vector2>, thick: Float, color: Color) = Raylib.DrawSplineLinear(points.memorySegment, points.size, thick, color.memorySegment)
+fun drawSplineLinear(points: AbstractNativeList<Vector2>, thick: Float, color: Color) = Raylib.DrawSplineLinear(points.data, points.size, thick, color.memorySegment)
 /** Draw spline: B-Spline, minimum 4 points */
-fun drawSplineBasis(points: NativeList<Vector2>, thick: Float, color: Color) = Raylib.DrawSplineBasis(points.memorySegment, points.size, thick, color.memorySegment)
+fun drawSplineBasis(points: AbstractNativeList<Vector2>, thick: Float, color: Color) = Raylib.DrawSplineBasis(points.data, points.size, thick, color.memorySegment)
 /** Draw spline: Catmull-Rom, minimum 4 points */
-fun drawSplineCatmullRom(points: NativeList<Vector2>, thick: Float, color: Color) = Raylib.DrawSplineCatmullRom(points.memorySegment, points.size, thick, color.memorySegment)
+fun drawSplineCatmullRom(points: AbstractNativeList<Vector2>, thick: Float, color: Color) = Raylib.DrawSplineCatmullRom(points.data, points.size, thick, color.memorySegment)
 /** Draw spline: Quadratic Bezier, minimum 3 points (1 control point): [p1, c2, p3, c4...] */
-fun drawSplineBezierQuadratic(points: NativeList<Vector2>, thick: Float, color: Color) = Raylib.DrawSplineBezierQuadratic(points.memorySegment, points.size, thick, color.memorySegment)
+fun drawSplineBezierQuadratic(points: AbstractNativeList<Vector2>, thick: Float, color: Color) = Raylib.DrawSplineBezierQuadratic(points.data, points.size, thick, color.memorySegment)
 /** Draw spline: Cubic Bezier, minimum 4 points (2 control points): [p1, c2, c3, p4, c5, c6...] */
-fun drawSplineBezierCubic(points: NativeList<Vector2>, thick: Float, color: Color) = Raylib.DrawSplineBezierCubic(points.memorySegment, points.size, thick, color.memorySegment)
+fun drawSplineBezierCubic(points: AbstractNativeList<Vector2>, thick: Float, color: Color) = Raylib.DrawSplineBezierCubic(points.data, points.size, thick, color.memorySegment)
 /** Draw spline segment: Linear, 2 points */
 fun drawSplineSegmentLinear(p1: Vector2, p2: Vector2, thick: Float, color: Color) = Raylib.DrawSplineSegmentLinear(p1.memorySegment, p2.memorySegment, thick, color.memorySegment)
 /** Draw spline segment: B-Spline, 4 points */
@@ -136,9 +137,9 @@ fun checkCollisionPointCircle(point: Vector2, center: Vector2, radius: Float) = 
 /** Check if pois: Int inside a triangle */
 fun checkCollisionPointTriangle(point: Vector2, p1: Vector2, p2: Vector2, p3: Vector2) = Raylib.CheckCollisionPointTriangle(point.memorySegment, p1.memorySegment, p2.memorySegment, p3.memorySegment)
 /** Check if pois: Int within a polygon described by array of vertices */
-fun checkCollisionPointPoly(point: Vector2, points: NativeList<Vector2>) = Raylib.CheckCollisionPointPoly(point.memorySegment, points.memorySegment, points.size)
+fun checkCollisionPointPoly(point: Vector2, points: AbstractNativeList<Vector2>) = Raylib.CheckCollisionPointPoly(point.memorySegment, points.data, points.size)
 /** Check the collision between two lines defined by two points each, returns collision poby: Int reference */
-fun checkCollisionLines(startPos1: Vector2, endPos1: Vector2, startPos2: Vector2, endPos2: Vector2, collisionPoint: NativeList<Vector2> ) = Raylib.CheckCollisionLines(startPos1.memorySegment, endPos1.memorySegment, startPos2.memorySegment, endPos2.memorySegment, collisionPoint.memorySegment)
+fun checkCollisionLines(startPos1: Vector2, endPos1: Vector2, startPos2: Vector2, endPos2: Vector2, collisionPoint: AbstractNativeList<Vector2> ) = Raylib.CheckCollisionLines(startPos1.memorySegment, endPos1.memorySegment, startPos2.memorySegment, endPos2.memorySegment, collisionPoint.data)
 /** Check if pobelongs: Int to line created between two points [p1] and [p2] with defined margin in pixels [threshold] */
 fun checkCollisionPointLine(point: Vector2, p1: Vector2, p2: Vector2, threshold: Int) = Raylib.CheckCollisionPointLine(point.memorySegment, p1.memorySegment, p2.memorySegment, threshold)
 /** Get collision rectangle for two rectangles collision */
