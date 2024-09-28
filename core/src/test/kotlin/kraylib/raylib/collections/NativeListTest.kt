@@ -249,7 +249,11 @@ class NativeListTest {
             assertEquals(item.z, index * 3)
         }
 
-        val testTestMemory = nativeList[6]
+        val testTestMemory = TestNativeMemory()
+        testTestMemory.x = 6
+        testTestMemory.y = 12
+        testTestMemory.z = 18
+
         nativeList.removeAt(5)
 
         assertEquals(nativeList[5], testTestMemory)
@@ -292,55 +296,4 @@ class NativeListTest {
         assertEquals(6, shiftElement2.y)
         assertEquals(9, shiftElement2.z)
     }
-//
-//    @Test
-//    fun `GIVEN a MutableNativeList WHEN adding a collection of elements at an index THEN the list should grow to fit new element and add element to end of list`() {
-//
-//        val testList = (0..10).map {
-//            TestNativeMemory().apply {
-//                x = it
-//                y = it * 2
-//                z = it * 3
-//            }
-//        }
-//
-//        val nativeList = mutableNativeListOf(testList, ::TestNativeMemory)
-//
-//        nativeList.forEachIndexed { index, item ->
-//            assertEquals(item.x, index)
-//            assertEquals(item.y, index * 2)
-//            assertEquals(item.z, index * 3)
-//        }
-//
-//        val testNativeMemory = TestNativeMemory().apply {
-//            x = 100
-//            y = 200
-//            z = 300
-//        }
-//        val testNativeMemory2 = TestNativeMemory().apply {
-//            x = 1000
-//            y = 2000
-//            z = 3000
-//        }
-//        val testNativeMemory3 = TestNativeMemory().apply {
-//            x = 10000
-//            y = 20000
-//            z = 30000
-//        }
-//        nativeList.addAll(5, listOf(testNativeMemory, testNativeMemory2, testNativeMemory3))
-//
-//        val addedNativeMemory = nativeList[5]
-//        val addedNativeMemory2 = nativeList[6]
-//        val addedNativeMemory3 = nativeList[7]
-//
-//        assertEquals(addedNativeMemory, testNativeMemory)
-//        assertEquals(addedNativeMemory.address, testNativeMemory.address)
-//
-//        assertEquals(addedNativeMemory2, testNativeMemory2)
-//        assertEquals(addedNativeMemory2.address, testNativeMemory2.address)
-//
-//        assertEquals(addedNativeMemory3, testNativeMemory3)
-//        assertEquals(addedNativeMemory3.address, testNativeMemory3.address)
-//    }
-
 }
