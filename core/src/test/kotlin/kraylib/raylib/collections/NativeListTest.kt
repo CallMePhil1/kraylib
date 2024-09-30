@@ -101,6 +101,23 @@ class NativeListTest {
     }
 
     @Test
+    fun `GIVEN a list of non native memory items WHEN mutableNativeListOf is called THEN the items should copied and wrapped in a MutableNativeList`() {
+        val testList = (0..10).map { it }
+
+        val nativeList = mutableNativeListOf(
+            testList,
+            ValueLayout.JAVA_INT.byteSize(),
+            { it.get(ValueLayout.JAVA_INT, 0) },
+            { memorySegment, value -> memorySegment.set(ValueLayout.JAVA_INT, 0, value)}
+        )
+
+        nativeList.forEachIndexed { index, item ->
+            assertEquals(nativeList[index], item)
+        }
+    }
+
+
+    @Test
     fun `GIVEN a MutableNativeList WHEN adding an element to the list THEN the list should grow to fit new element and add element to end of list`() {
         val testList = (0..10).map {
             TestNativeMemory().apply {
@@ -229,6 +246,10 @@ class NativeListTest {
 
         assertEquals(addedNativeMemory3, testNativeMemory3)
         assertEquals(addedNativeMemory3.address, testNativeMemory3.address)
+
+        assertEquals(5, nativeList[8].x)
+        assertEquals(10, nativeList[8].y)
+        assertEquals(15, nativeList[8].z)
     }
 
     @Test

@@ -5,8 +5,11 @@ import kraylib.ffm.Raylib
 import kraylib.FFM.arena
 import kraylib.raylib.Pointer
 import kraylib.raylib.collections.NativeList
+import kraylib.raylib.collections.nativeListOf
 import kraylib.raylib.ext.allocate
 import kraylib.raylib.structs.*
+import java.lang.foreign.MemorySegment
+import java.lang.foreign.ValueLayout
 
 object CameraMode {
     /** Custom camera */
@@ -485,17 +488,66 @@ fun windowShouldClose() = Raylib.WindowShouldClose()
 // Font Loading and Text Drawing Functions (Module: text)
 //------------------------------------------------------------------------------------
 // Font loading/unloading functions
-fun getFontDefault() = Font(Raylib.GetFontDefault(arena))                                                        // Get the default Font
-fun loadFont(fileName: String) = Font(Raylib.LoadFont(arena, fileName.allocate(arena)))                                               // Load font from file into GPU memory (VRAM)
-//fun loadFontEx(fileName: String, fontSize: Int, int *codepoints, codepointCount: Int): Font  {} // Load font from file with extended parameters, use NULL for codepoints and 0 for codepointCount to load the default character set
-fun loadFontFromImage(image: Image, key: Color, firstChar: Int) = Font(Raylib.LoadFontFromImage(arena, image.memorySegment, key.memorySegment, firstChar))                       // Load font from Image (XNA style)
-//fun loadFontFromMemory(fileType: String, fileData: Pointer<UByte>, dataSize: Int, fontSize: Int, int *codepoints, codepointCount: Int) = Rayl // Load font from memory buffer, fileType refers to extension: i.e. '.ttf'
-fun isFontReady(font: Font) = Raylib.IsFontReady(font.memorySegment)                                                        // Check if a font is ready
-//fun *loadFontData(const unsigned char *fileData, dataSize: Int, fontSize: Int, int *codepoints, codepointCount: Int, type: Int): GlyphInfo  {}// Load font data for further use
-//fun genImageFontAtlas(const GlyphInfo *glyphs, Rectangle **glyphRecs, glyphCount: Int, fontSize: Int, padding: Int, packMethod: Int): Image  {}// Generate image font atlas using chars info
-//fun unloadFontData(glyphs: NativeList<GlyphInfo>, glyphCount: Int) = Raylib.UnloadFontData(glyphs.memorySegment, glyphCount)                             // Unload font chars info data (RAM)
-fun unloadFont(font: Font) = Raylib.UnloadFont(font.memorySegment)                                                          // Unload font from GPU memory (VRAM)
-fun exportFontAsCode(font: Font, fileName: String) = Raylib.ExportFontAsCode(font.memorySegment, fileName.allocate(arena))                             // Export font as code file, returns true on success
+/** Get the default Font */
+fun getFontDefault() = Font(Raylib.GetFontDefault(arena))
+/** Load font from file into GPU memory (VRAM) */
+fun loadFont(fileName: String) = Font(Raylib.LoadFont(arena, fileName.allocate(arena)))
+/** Load font from file with extended parameters, use NULL for codepoints and 0 for codepointCount to load the default character set */
+fun loadFontEx(fileName: String, fontSize: Int, codepoints: NativeList<Int>, codepointCount: Int) = Raylib.LoadFontEx(arena, fileName.allocate(arena), fontSize, codepoints.data, codepointCount)
+/** Load font from Image (XNA style) */
+fun loadFontFromImage(image: Image, key: Color, firstChar: Int) = Font(Raylib.LoadFontFromImage(arena, image.memorySegment, key.memorySegment, firstChar))
+
+/**
+ * Load font from memory buffer, fileType refers to extension: i.e. '.ttf'
+ */
+fun loadFontFromMemory(
+    fileType: String,
+    fileData: MemorySegment,
+    dataSize: Int,
+    fontSize: Int,
+    codepoints: NativeList<Int>,
+    codepointCount: Int
+) = Raylib.LoadFontFromMemory(
+    arena,
+    fileType.allocate(arena),
+    fileData,
+    dataSize,
+    fontSize,
+    codepoints.data,
+    codepointCount
+)
+
+/** Check if a font is ready */
+fun isFontReady(font: Font) = Raylib.IsFontReady(font.memorySegment)
+
+/**
+ * Load font data for further use
+ */
+fun loadFontData(fileData: MemorySegment, dataSize: Int, fontSize: Int, codepoints: NativeList<Int>, codepointCount: Int, type: Int
+) = Raylib.LoadFontData(fileData, dataSize, fontSize, codepoints.data, codepointCount, type)
+
+/**
+ * Generate image font atlas using chars info
+ */
+fun genImageFontAtlas(glyphs: NativeList<GlyphInfo>, glyphCount: Int, fontSize: Int, padding: Int, packMethod: Int): Pair<Image, NativeList<Rectangle>>  {
+    val recsPointer = arena.allocate(ValueLayout.ADDRESS)
+    val imageSegment = Raylib.GenImageFontAtlas(arena, glyphs.data, recsPointer, glyphCount, fontSize, padding, packMethod)
+    val image = Image(imageSegment)
+    val rectSegment = recsPointer.get(ValueLayout.ADDRESS, 0).reinterpret(kraylib.ffm.Rectangle.sizeof() * glyphCount)
+    val rectList = nativeListOf(rectSegment, ::Rectangle)
+    return image to rectList
+}
+
+/**
+ * Unload font chars info data (RAM)
+ */
+fun unloadFontData(glyphs: NativeList<GlyphInfo>, glyphCount: Int) = Raylib.UnloadFontData(glyphs.data, glyphCount)
+
+/** Unload font from GPU memory (VRAM) */
+fun unloadFont(font: Font) = Raylib.UnloadFont(font.memorySegment)
+
+/** Export font as code file, returns true on success */
+fun exportFontAsCode(font: Font, fileName: String) = Raylib.ExportFontAsCode(font.memorySegment, fileName.allocate(arena))
 
 //// Text drawing functions
 //fun drawFPS(posX: Int, posY: Int): Unit = Raylib.DrawFPS(posX, posY)                                                    // Draw current FPS
